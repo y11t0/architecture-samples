@@ -356,6 +356,67 @@ class TasksTest {
         composeTestRule.onNodeWithText(taskAddedMessage).assertDoesNotExist()
     }
 
+    @Test
+    fun createTask_openTaskWhileSnackbarIsShown_snackbarIsNotShownAgain() {
+        setContent()
+
+        val taskAddedMessage = activity.getString(R.string.successfully_added_task_message)
+
+        // Click on the "+" button, add details, and save
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
+        findTextField(R.string.title_hint).performTextInput("title")
+        findTextField(R.string.description_hint).performTextInput("description")
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.cd_save_task))
+            .performClick()
+
+        // Open the task while the confirmation is still visible
+        composeTestRule.onNodeWithText("title").assertIsDisplayed()
+        composeTestRule.onNodeWithText(taskAddedMessage).assertIsDisplayed()
+        composeTestRule.onNodeWithText("title").performClick()
+        composeTestRule.onNodeWithText(activity.getString(R.string.task_details))
+            .assertIsDisplayed()
+
+        // Go back to the list with the navigation up button
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.menu_back))
+            .performClick()
+
+        // Verify the confirmation is not shown again
+        composeTestRule.onNodeWithText(activity.getString(R.string.label_all)).assertIsDisplayed()
+        composeTestRule.onNodeWithText("title").assertIsDisplayed()
+        composeTestRule.onNodeWithText(taskAddedMessage).assertDoesNotExist()
+    }
+
+    @Test
+    fun createTask_recreateTaskListWhileSnackbarIsShown_snackbarIsNotShownAgain() {
+        val stateRestorationTester = StateRestorationTester(composeTestRule)
+        stateRestorationTester.setContent {
+            TodoTheme {
+                TodoNavGraph()
+            }
+        }
+
+        val taskAddedMessage = activity.getString(R.string.successfully_added_task_message)
+
+        // Click on the "+" button, add details, and save
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.add_task))
+            .performClick()
+        findTextField(R.string.title_hint).performTextInput("title")
+        findTextField(R.string.description_hint).performTextInput("description")
+        composeTestRule.onNodeWithContentDescription(activity.getString(R.string.cd_save_task))
+            .performClick()
+
+        // Recreate the task list from saved state while the confirmation is still visible
+        composeTestRule.onNodeWithText("title").assertIsDisplayed()
+        composeTestRule.onNodeWithText(taskAddedMessage).assertIsDisplayed()
+        stateRestorationTester.emulateSavedInstanceStateRestore()
+
+        // Verify the confirmation is not shown again
+        composeTestRule.onNodeWithText(activity.getString(R.string.label_all)).assertIsDisplayed()
+        composeTestRule.onNodeWithText("title").assertIsDisplayed()
+        composeTestRule.onNodeWithText(taskAddedMessage).assertDoesNotExist()
+    }
+
     private fun setContent() {
         composeTestRule.setContent {
             TodoTheme {

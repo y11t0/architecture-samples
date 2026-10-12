@@ -193,6 +193,28 @@ class TasksViewModelTest {
     }
 
     @Test
+    fun snackbarMessageShown_clearsDisplayedMessage() = runTest {
+        // When a message was shown and then reported as displayed
+        tasksViewModel.showEditResultMessage(EDIT_RESULT_OK)
+        tasksViewModel.snackbarMessageShown(R.string.successfully_saved_task_message)
+
+        // The snackbar message is cleared
+        assertThat(tasksViewModel.uiState.first().userMessage).isNull()
+    }
+
+    @Test
+    fun snackbarMessageShown_keepsNewerMessage() = runTest {
+        // When a newer message replaced the one that was being shown
+        tasksViewModel.showEditResultMessage(EDIT_RESULT_OK)
+        tasksViewModel.showEditResultMessage(ADD_EDIT_RESULT_OK)
+        tasksViewModel.snackbarMessageShown(R.string.successfully_saved_task_message)
+
+        // The newer message is not lost
+        assertThat(tasksViewModel.uiState.first().userMessage)
+            .isEqualTo(R.string.successfully_added_task_message)
+    }
+
+    @Test
     fun completeTask_dataAndSnackbarUpdated() = runTest {
         // With a repository that has an active task
         val task = Task(id = "id", title = "Title", description = "Description")
