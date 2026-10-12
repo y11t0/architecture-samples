@@ -21,6 +21,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,10 +69,16 @@ fun TodoNavGraph(
                 navArgument(USER_MESSAGE_ARG) { type = NavType.IntType; defaultValue = 0 }
             )
         ) { entry ->
+            val userMessage = entry.arguments?.getInt(USER_MESSAGE_ARG)!!
+            val userMessageShown by entry.savedStateHandle
+                .getStateFlow(USER_MESSAGE_SHOWN_KEY, false)
+                .collectAsState()
             AppModalDrawer(drawerState, currentRoute, navActions) {
                 TasksScreen(
-                    userMessage = entry.arguments?.getInt(USER_MESSAGE_ARG)!!,
-                    onUserMessageDisplayed = { entry.arguments?.putInt(USER_MESSAGE_ARG, 0) },
+                    userMessage = if (userMessageShown) 0 else userMessage,
+                    onUserMessageDisplayed = {
+                        entry.savedStateHandle[USER_MESSAGE_SHOWN_KEY] = true
+                    },
                     onAddTask = { navActions.navigateToAddEditTask(R.string.add_task, null) },
                     onTaskClick = { task -> navActions.navigateToTaskDetail(task.id) },
                     openDrawer = { coroutineScope.launch { drawerState.open() } }
@@ -117,3 +124,6 @@ fun TodoNavGraph(
 const val ADD_EDIT_RESULT_OK = Activity.RESULT_FIRST_USER + 1
 const val DELETE_RESULT_OK = Activity.RESULT_FIRST_USER + 2
 const val EDIT_RESULT_OK = Activity.RESULT_FIRST_USER + 3
+
+// Records in the tasks entry's SavedStateHandle that its userMessage was already displayed
+private const val USER_MESSAGE_SHOWN_KEY = "userMessageShown"
