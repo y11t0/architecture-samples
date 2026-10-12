@@ -148,6 +148,56 @@ class AddEditTaskViewModelTest {
         saveTaskAndAssertUserMessage("", "")
     }
 
+    @Test
+    fun saveTask_noTaskId_createsNewTaskAndMarksSaved() {
+        // Given a repository without tasks and a ViewModel for a brand new task
+        tasksRepository = FakeTaskRepository()
+        addEditTaskViewModel = AddEditTaskViewModel(tasksRepository, SavedStateHandle())
+
+        addEditTaskViewModel.apply {
+            updateTitle("New Task Title")
+            updateDescription("Some Task Description")
+        }
+        addEditTaskViewModel.saveTask()
+
+        // Then exactly one task is created in the repository and the UI is told it was saved
+        val createdTask = tasksRepository.savedTasks.value.values.single()
+        assertThat(createdTask.title).isEqualTo("New Task Title")
+        assertThat(createdTask.description).isEqualTo("Some Task Description")
+        assertThat(addEditTaskViewModel.uiState.value.isTaskSaved).isTrue()
+    }
+
+    @Test
+    fun saveTask_existingTask_updatesTaskAndMarksSaved() {
+        addEditTaskViewModel = AddEditTaskViewModel(
+            tasksRepository,
+            SavedStateHandle(mapOf(TodoDestinationsArgs.TASK_ID_ARG to "0"))
+        )
+
+        addEditTaskViewModel.updateTitle("Updated Title")
+        addEditTaskViewModel.saveTask()
+
+        // Then the existing task is updated in place and the UI is told it was saved
+        assertThat(tasksRepository.savedTasks.value).hasSize(1)
+        assertThat(tasksRepository.savedTasks.value["0"]?.title).isEqualTo("Updated Title")
+        assertThat(addEditTaskViewModel.uiState.value.isTaskSaved).isTrue()
+    }
+
+    @Test
+    fun snackbarMessageShown_clearsUserMessage() {
+        addEditTaskViewModel = AddEditTaskViewModel(tasksRepository, SavedStateHandle())
+
+        // When saving an incomplete task, an error message is shown and nothing is saved
+        addEditTaskViewModel.saveTask()
+        assertThat(addEditTaskViewModel.uiState.value.userMessage)
+            .isEqualTo(string.empty_task_message)
+        assertThat(addEditTaskViewModel.uiState.value.isTaskSaved).isFalse()
+
+        // Then once the message has been shown it is cleared
+        addEditTaskViewModel.snackbarMessageShown()
+        assertThat(addEditTaskViewModel.uiState.value.userMessage).isNull()
+    }
+
     private fun saveTaskAndAssertUserMessage(title: String, description: String) {
         addEditTaskViewModel.apply {
             updateTitle(title)
