@@ -112,8 +112,13 @@ fun TasksScreen(
         uiState.userMessage?.let { message ->
             val snackbarText = stringResource(message)
             LaunchedEffect(snackbarHostState, viewModel, message, snackbarText) {
-                snackbarHostState.showSnackbar(snackbarText)
-                viewModel.snackbarMessageShown()
+                try {
+                    snackbarHostState.showSnackbar(snackbarText)
+                } finally {
+                    // Also runs when the screen leaves composition or is recreated while the
+                    // snackbar is still visible, so the message is not shown a second time
+                    viewModel.snackbarMessageShown(message)
+                }
             }
         }
 

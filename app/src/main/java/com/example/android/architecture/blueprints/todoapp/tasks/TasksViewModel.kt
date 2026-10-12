@@ -129,8 +129,9 @@ class TasksViewModel @Inject constructor(
         }
     }
 
-    fun snackbarMessageShown() {
-        _userMessage.value = null
+    fun snackbarMessageShown(message: Int) {
+        // Only clear the message that was displayed so a newer one is not lost
+        _userMessage.compareAndSet(message, null)
     }
 
     private fun showSnackbarMessage(message: Int) {
